@@ -1,8 +1,6 @@
 package com.example.demo.domain.entity;
 
 
-import com.example.demo.domain.TaskPriority;
-import com.example.demo.domain.TaskStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

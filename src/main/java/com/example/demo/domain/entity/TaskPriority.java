@@ -1,4 +1,4 @@
-package com.example.demo.domain;
+package com.example.demo.domain.entity;
 
 public enum TaskPriority {
     LOW,
