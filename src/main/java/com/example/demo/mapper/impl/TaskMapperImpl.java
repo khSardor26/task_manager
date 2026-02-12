@@ -23,6 +23,7 @@ public class TaskMapperImpl implements TaskMapper {
     @Override
     public TaskDto toDto(Task request) {
         return TaskDto.builder()
+                .id(request.getId())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .dueDate(request.getDueDate())

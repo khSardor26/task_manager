@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@CrossOrigin(origins = "http://localhost:63342")
 @RestController
 @RequestMapping(path = "api/v1/tasks")
 public class Controller {
@@ -31,18 +30,19 @@ public class Controller {
         return new ResponseEntity<>(taskService.createTask(request), HttpStatus.CREATED);
     }
 
-    @GetMapping({"", "/"})   // handles both /api/v1/tasks and /api/v1/tasks/
+    @GetMapping({"", "/"})
     public ResponseEntity<List<Task>> allGet() {
-        return ResponseEntity.ok(taskService.getAll());  // ← use OK instead of FOUND
+        return ResponseEntity.ok(taskService.getAll());
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<TaskDto> getById(@PathVariable UUID id){
-        return new ResponseEntity<>(taskService.getById(id), HttpStatus.FOUND);
+        return new ResponseEntity<>(taskService.getById(id), HttpStatus.OK);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<TaskDto> patch(@PathVariable UUID id, @RequestBody UpdateTaskRequest req){
-        return new ResponseEntity<>(taskService.update(id,req), HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(taskService.update(id,req), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
