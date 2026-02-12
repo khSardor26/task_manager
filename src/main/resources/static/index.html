@@ -201,33 +201,33 @@
       border: 1px solid var(--border);
       overflow: hidden;
       box-shadow: var(--shadow);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
-      flex-direction: column;
+      position: relative;
     }
 
     .task-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+      border-color: var(--primary);
     }
 
-    .priority-line { height: 4px; }
-    .priority-low    { background: var(--success); }
-    .priority-medium { background: var(--warning); }
-    .priority-high   { background: var(--danger); }
+    .priority-sidebar { width: 6px; flex-shrink: 0; }
+    .priority-low    { background: var(--success); box-shadow: 2px 0 10px rgba(16,185,129,0.3); }
+    .priority-medium { background: var(--warning); box-shadow: 2px 0 10px rgba(245,158,11,0.3); }
+    .priority-high   { background: var(--danger);  box-shadow: 2px 0 10px rgba(239,68,68,0.3); }
 
-    .card-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+    .card-body { padding: 1.25rem 1.5rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 0.75rem;
       gap: 1rem;
     }
 
-    .task-title-wrapper { display: flex; align-items: flex-start; gap: 0.75rem; }
-    .task-title { font-size: 1.2rem; font-weight: 700; line-height: 1.3; }
+    .task-title-wrapper { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+    .task-title { font-size: 1.15rem; font-weight: 700; line-height: 1.3; color: var(--text); }
     .task-checkbox {
         width: 1.2rem;
         height: 1.2rem;
@@ -237,42 +237,43 @@
     }
 
     .due-date {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
       gap: 0.4rem;
       color: var(--text-muted);
       white-space: nowrap;
-      background: rgba(100,116,139,0.08);
-      padding: 0.25rem 0.6rem;
-      border-radius: 0.5rem;
+      background: rgba(100,116,139,0.06);
+      padding: 0.35rem 0.7rem;
+      border-radius: 0.6rem;
+      font-weight: 500;
     }
     .due-date.overdue { color: var(--danger); background: rgba(239,68,68,0.08); font-weight: 600; }
 
     .task-description {
       color: var(--text-muted);
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin: 0.75rem 0;
-      flex: 1;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
+      margin-top: 0.5rem;
     }
 
     .status-badge {
-      padding: 0.3rem 0.8rem;
-      border-radius: 2rem;
-      font-size: 0.75rem;
-      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
     }
     .status-open      { background: rgba(59,130,246,0.1); color: #3b82f6; }
     .status-completed { background: rgba(16,185,129,0.1); color: #10b981; }
@@ -511,6 +512,14 @@
 
 <script>
   // ──────────────────────────────────────────────
+  // GLOBAL EXPORTS FOR INLINE HANDLERS
+  // ──────────────────────────────────────────────
+  window.toggleComplete = toggleComplete;
+  window.setFilter = setFilter;
+  window.openEditModal = openEditModal;
+  window.deleteTask = deleteTask;
+
+  // ──────────────────────────────────────────────
   // CONFIG & STATE
   // ──────────────────────────────────────────────
   const API_BASE = (window.location.port === '63342')
@@ -520,7 +529,7 @@
   let currentFilter = "all";
 
   // ──────────────────────────────────────────────
-  // DOM
+  // DOM ELEMENTS
   // ──────────────────────────────────────────────
   const els = {
     taskList: document.getElementById("taskList"),
@@ -547,141 +556,7 @@
   };
 
   // ──────────────────────────────────────────────
-  // HELPERS
-  // ──────────────────────────────────────────────
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-            .replaceAll("&","&amp;")
-            .replaceAll("<","&lt;")
-            .replaceAll(">","&gt;")
-            .replaceAll('"',"&quot;")
-            .replaceAll("'","&#039;");
-  }
-
-  function formatDate(iso) {
-    if (!iso) return "—";
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
-    } catch { return "—"; }
-  }
-
-  function isOverdue(due) {
-    if (!due) return false;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const d = new Date(due); d.setHours(0,0,0,0);
-    return d < today;
-  }
-
-  function getPriorityClass(p) { return (p || "MEDIUM").toLowerCase(); }
-  function getStatusClass(s)    { return (s || "OPEN").toLowerCase(); }
-
-  // ──────────────────────────────────────────────
-  // FILTER & SEARCH
-  // ──────────────────────────────────────────────
-  function setFilter(filter) {
-    currentFilter = filter;
-    document.querySelectorAll(".filter-item").forEach(el => {
-      el.classList.toggle("active", el.dataset.filter === filter);
-    });
-    renderTasks();
-  }
-  window.setFilter = setFilter;
-
-  els.searchInput.addEventListener("input", () => renderTasks());
-
-  // ──────────────────────────────────────────────
-  // STATS
-  // ──────────────────────────────────────────────
-  function updateStats() {
-    const total = allTasks.length;
-    const open = allTasks.filter(t => t.status === "OPEN").length;
-    const overdue = allTasks.filter(t => t.status === "OPEN" && isOverdue(t.dueDate)).length;
-
-    els.statTotal.textContent = total;
-    els.statOpen.textContent = open;
-    els.statOverdue.textContent = overdue;
-    els.statOverdue.parentElement.style.color = overdue > 0 ? "var(--danger)" : "";
-  }
-
-  // ──────────────────────────────────────────────
-  // RENDER TASKS
-  // ──────────────────────────────────────────────
-  function renderTasks(tasks = allTasks) {
-    els.taskList.innerHTML = "";
-
-    const searchTerm = els.searchInput.value.toLowerCase();
-
-    const visible = tasks.filter(t => {
-      // Filter by category
-      let matchesFilter = true;
-      if (currentFilter === "open") matchesFilter = t.status === "OPEN";
-      else if (currentFilter === "completed") matchesFilter = t.status === "COMPLETED";
-      else if (currentFilter === "high") matchesFilter = t.priority === "HIGH";
-
-      // Filter by search
-      const matchesSearch = (t.title || "").toLowerCase().includes(searchTerm) ||
-                            (t.description || "").toLowerCase().includes(searchTerm);
-
-      return matchesFilter && matchesSearch;
-    });
-
-    if (visible.length === 0) {
-      els.emptyState.style.display = "block";
-    } else {
-      els.emptyState.style.display = "none";
-
-      visible.forEach(task => {
-        const card = document.createElement("div");
-        card.className = "task-card";
-
-        const overdueClass = (task.status === 'OPEN' && isOverdue(task.dueDate)) ? "overdue" : "";
-
-        card.innerHTML = `
-          <div class="priority-line priority-${getPriorityClass(task.priority)}"></div>
-          <div class="card-body">
-            <div class="card-header">
-              <div class="task-title-wrapper">
-                <input type="checkbox" class="task-checkbox" ${task.status === "COMPLETED" ? "checked" : ""}
-                  onchange="toggleComplete('${task.id}')">
-                <div class="task-title" style="${task.status === 'COMPLETED' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
-                  ${escapeHtml(task.title || "Untitled")}
-                </div>
-              </div>
-              <div class="due-date ${overdueClass}">
-                <i class="fa-regular fa-calendar"></i> ${formatDate(task.dueDate)}
-              </div>
-            </div>
-
-            <div class="task-description">${escapeHtml(task.description || "")}</div>
-
-            <div class="card-footer">
-              <span class="status-badge status-${getStatusClass(task.status)}">
-                ${escapeHtml(task.status)}
-              </span>
-
-              <div class="card-actions">
-                <button class="btn btn-icon" onclick="openEditModal('${task.id}')" title="Edit">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button class="btn btn-icon delete" onclick="deleteTask('${task.id}')" title="Delete">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-
-        els.taskList.appendChild(card);
-      });
-    }
-
-    updateStats();
-  }
-
-  // ──────────────────────────────────────────────
-  // API
+  // API SERVICE
   // ──────────────────────────────────────────────
   const api = {
     getAll: () => fetch(API_BASE),
@@ -699,6 +574,9 @@
     delete: id => fetch(`${API_BASE}/${id}`, { method:"DELETE" })
   };
 
+  // ──────────────────────────────────────────────
+  // CORE FUNCTIONS
+  // ──────────────────────────────────────────────
   async function loadTasks(showLoading = true) {
     if (showLoading) {
         els.loading.style.display = "block";
@@ -711,7 +589,6 @@
       renderTasks();
     } catch (err) {
       console.error(err);
-      alert("Error loading tasks: " + err.message);
     } finally {
       els.loading.style.display = "none";
       els.taskList.style.display = "grid";
@@ -719,7 +596,7 @@
   }
 
   async function toggleComplete(id) {
-    const task = allTasks.find(t => t.id === id);
+    const task = allTasks.find(t => String(t.id) === String(id));
     if (!task) return;
 
     const newStatus = task.status === "COMPLETED" ? "OPEN" : "COMPLETED";
@@ -732,10 +609,95 @@
       alert("Could not update status: " + err.message);
     }
   }
-  window.toggleComplete = toggleComplete;
+
+  async function deleteTask(id) {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    try {
+      const res = await api.delete(id);
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      await loadTasks(false);
+    } catch (err) {
+      alert("Could not delete task: " + err.message);
+    }
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll(".filter-item").forEach(el => {
+      el.classList.toggle("active", el.dataset.filter === filter);
+    });
+    renderTasks();
+  }
 
   // ──────────────────────────────────────────────
-  // MODAL
+  // UI RENDERING
+  // ──────────────────────────────────────────────
+  function renderTasks() {
+    els.taskList.innerHTML = "";
+    const searchTerm = els.searchInput.value.toLowerCase();
+
+    const visible = allTasks.filter(t => {
+      let matchesFilter = true;
+      if (currentFilter === "open") matchesFilter = t.status === "OPEN";
+      else if (currentFilter === "completed") matchesFilter = t.status === "COMPLETED";
+      else if (currentFilter === "high") matchesFilter = t.priority === "HIGH";
+
+      const matchesSearch = (t.title || "").toLowerCase().includes(searchTerm) ||
+                            (t.description || "").toLowerCase().includes(searchTerm);
+
+      return matchesFilter && matchesSearch;
+    });
+
+    if (visible.length === 0) {
+      els.emptyState.style.display = "block";
+    } else {
+      els.emptyState.style.display = "none";
+      visible.forEach(task => {
+        const card = document.createElement("div");
+        card.className = "task-card";
+        const overdueClass = (task.status === 'OPEN' && isOverdue(task.dueDate)) ? "overdue" : "";
+        const pClass = (task.priority || "MEDIUM").toLowerCase();
+        const sClass = (task.status || "OPEN").toLowerCase();
+
+        card.innerHTML = `
+          <div class="priority-sidebar priority-${pClass}"></div>
+          <div class="card-body">
+            <div class="card-header">
+              <div class="task-title-wrapper">
+                <input type="checkbox" class="task-checkbox" ${task.status === "COMPLETED" ? "checked" : ""}
+                  onchange="toggleComplete('${task.id}')">
+                <div class="task-title" style="${task.status === 'COMPLETED' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                  ${escapeHtml(task.title || "Untitled")}
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-icon" onclick="openEditModal('${task.id}')" title="Edit">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-icon delete" onclick="deleteTask('${task.id}')" title="Delete">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+            <div class="task-description">${escapeHtml(task.description || "")}</div>
+            <div class="card-footer">
+              <div style="display:flex; gap:0.75rem; align-items:center;">
+                <span class="status-badge status-${sClass}">${escapeHtml(task.status)}</span>
+                <div class="due-date ${overdueClass}">
+                  <i class="fa-regular fa-calendar-check"></i> ${formatDate(task.dueDate)}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        els.taskList.appendChild(card);
+      });
+    }
+    updateStats();
+  }
+
+  // ──────────────────────────────────────────────
+  // MODAL LOGIC
   // ──────────────────────────────────────────────
   function openCreateModal() {
     els.modalTitle.textContent = "Create New Task";
@@ -749,118 +711,100 @@
 
   async function openEditModal(id) {
     try {
-      let task = allTasks.find(t => t.id === id);
+      let task = allTasks.find(t => String(t.id) === String(id));
       if (!task) {
         const res = await api.getOne(id);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         task = await res.json();
       }
-
       els.modalTitle.textContent = "Edit Task";
       els.editId.value = task.id;
       els.title.value = task.title ?? "";
       els.desc.value = task.description ?? "";
       els.dueDate.value = (task.dueDate ?? "").slice(0, 10);
       els.priority.value = task.priority ?? "MEDIUM";
-
       els.statusGroup.style.display = "block";
       els.status.value = task.status ?? "OPEN";
       els.btnSave.textContent = "Update Task";
-
       els.modal.style.display = "flex";
     } catch (err) {
-      console.error(err);
       alert("Could not open edit modal: " + err.message);
     }
   }
-  window.openEditModal = openEditModal;
 
-  function closeModal() {
-    els.modal.style.display = "none";
+  function closeModal() { els.modal.style.display = "none"; }
+
+  // ──────────────────────────────────────────────
+  // UTILS
+  // ──────────────────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function formatDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+  }
+  function isOverdue(due) {
+    if (!due) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(due); d.setHours(0,0,0,0);
+    return d < today;
+  }
+  function updateStats() {
+    const total = allTasks.length;
+    const open = allTasks.filter(t => t.status === "OPEN").length;
+    const overdue = allTasks.filter(t => t.status === "OPEN" && isOverdue(t.dueDate)).length;
+    els.statTotal.textContent = total;
+    els.statOpen.textContent = open;
+    els.statOverdue.textContent = overdue;
+    els.statOverdue.parentElement.style.color = overdue > 0 ? "var(--danger)" : "";
   }
 
-  els.modal.addEventListener("click", (e) => {
-    if (e.target === els.modal) closeModal();
+  // ──────────────────────────────────────────────
+  // EVENT LISTENERS
+  // ──────────────────────────────────────────────
+  els.form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      title: els.title.value.trim(),
+      description: els.desc.value.trim(),
+      dueDate: els.dueDate.value,
+      priority: els.priority.value
+    };
+    const id = els.editId.value;
+    try {
+      if (!id) {
+        await api.create(payload);
+      } else {
+        payload.status = els.status.value;
+        await api.update(id, payload);
+      }
+      closeModal();
+      await loadTasks(false);
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
   });
 
   els.btnCancel.addEventListener("click", closeModal);
   els.btnNewTask.addEventListener("click", openCreateModal);
   els.btnRefresh.addEventListener("click", () => loadTasks());
+  els.searchInput.addEventListener("input", () => renderTasks());
+  els.modal.addEventListener("click", (e) => { if (e.target === els.modal) closeModal(); });
 
-  // ──────────────────────────────────────────────
-  // DELETE
-  // ──────────────────────────────────────────────
-  async function deleteTask(id) {
-    const ok = confirm("Are you sure you want to delete this task?");
-    if (!ok) return;
-
-    try {
-      const res = await api.delete(id);
-      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
-      await loadTasks(false);
-    } catch (err) {
-      alert("Could not delete task: " + err.message);
-    }
-  }
-  window.deleteTask = deleteTask;
-
-  // ──────────────────────────────────────────────
-  // FORM SUBMIT
-  // ──────────────────────────────────────────────
-  els.form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const payload = {
-      title: els.title.value.trim(),
-      description: els.desc.value.trim() || "",
-      dueDate: els.dueDate.value,
-      priority: els.priority.value
-    };
-
-    const id = els.editId.value;
-
-    try {
-      if (!id) {
-        const res = await api.create(payload);
-        if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.message || "Failed to create task");
-        }
-      } else {
-        payload.status = els.status.value;
-        const res = await api.update(id, payload);
-        if (!res.ok) throw new Error("Failed to update task");
-      }
-
-      closeModal();
-      await loadTasks(false);
-    } catch (err) {
-      console.error(err);
-      alert("Error: " + err.message);
-    }
-  });
-
-  // ──────────────────────────────────────────────
-  // INITIAL LOAD
-  // ──────────────────────────────────────────────
-  loadTasks();
-
-  // ──────────────────────────────────────────────
-  // THEME
-  // ──────────────────────────────────────────────
+  // Theme Logic
   const themeToggle = document.getElementById("themeToggle");
   themeToggle.addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme;
-    const next = current === "dark" ? "light" : "dark";
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     localStorage.setItem("theme", next);
   });
+  if (localStorage.getItem("theme")) document.documentElement.dataset.theme = localStorage.getItem("theme");
+  else if (window.matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.dataset.theme = "dark";
 
-  if (localStorage.getItem("theme")) {
-    document.documentElement.dataset.theme = localStorage.getItem("theme");
-  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    document.documentElement.dataset.theme = "dark";
-  }
+  // Init
+  loadTasks();
 </script>
 
 </body>
