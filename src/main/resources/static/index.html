@@ -191,6 +191,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 1.5rem;
+      align-items: start;
     }
 
     .task-card {
@@ -258,13 +259,35 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      transition: all 0.3s ease;
     }
+    .task-description.expanded {
+      -webkit-line-clamp: unset;
+      display: block;
+    }
+
+    .read-more-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      margin-top: -0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      width: fit-content;
+    }
+    .read-more-btn:hover { text-decoration: underline; }
 
     .card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 0.5rem;
+      margin-top: auto;
+      padding-top: 0.5rem;
     }
 
     .status-badge {
@@ -515,6 +538,7 @@
   // GLOBAL EXPORTS FOR INLINE HANDLERS
   // ──────────────────────────────────────────────
   window.toggleComplete = toggleComplete;
+  window.toggleExpand = toggleExpand;
   window.setFilter = setFilter;
   window.openEditModal = openEditModal;
   window.deleteTask = deleteTask;
@@ -598,9 +622,7 @@
   async function toggleComplete(id) {
     const task = allTasks.find(t => String(t.id) === String(id));
     if (!task) return;
-
     const newStatus = task.status === "COMPLETED" ? "OPEN" : "COMPLETED";
-
     try {
       const res = await api.update(id, { status: newStatus });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -608,6 +630,17 @@
     } catch (err) {
       alert("Could not update status: " + err.message);
     }
+  }
+
+  function toggleExpand(id) {
+    const card = document.querySelector(`.task-card[data-id="${id}"]`);
+    if (!card) return;
+    const desc = card.querySelector('.task-description');
+    const btn = card.querySelector('.read-more-btn');
+    const isExpanded = desc.classList.toggle('expanded');
+    btn.innerHTML = isExpanded
+      ? `Show Less <i class="fa-solid fa-chevron-up"></i>`
+      : `Read More <i class="fa-solid fa-chevron-down"></i>`;
   }
 
   async function deleteTask(id) {
@@ -655,9 +688,12 @@
       visible.forEach(task => {
         const card = document.createElement("div");
         card.className = "task-card";
+        card.setAttribute("data-id", task.id);
         const overdueClass = (task.status === 'OPEN' && isOverdue(task.dueDate)) ? "overdue" : "";
         const pClass = (task.priority || "MEDIUM").toLowerCase();
         const sClass = (task.status || "OPEN").toLowerCase();
+
+        const hasLongDesc = (task.description || "").length > 100;
 
         card.innerHTML = `
           <div class="priority-sidebar priority-${pClass}"></div>
@@ -679,7 +715,14 @@
                 </button>
               </div>
             </div>
+
             <div class="task-description">${escapeHtml(task.description || "")}</div>
+            ${task.description && task.description.length > 80 ? `
+              <button class="read-more-btn" onclick="toggleExpand('${task.id}')">
+                Read More <i class="fa-solid fa-chevron-down"></i>
+              </button>
+            ` : ''}
+
             <div class="card-footer">
               <div style="display:flex; gap:0.75rem; align-items:center;">
                 <span class="status-badge status-${sClass}">${escapeHtml(task.status)}</span>
