@@ -7,7 +7,7 @@ import com.example.demo.domain.entity.Task;
 
 public interface TaskMapper {
 
-    //CreateTaskRequest fromDto(CreateTaskRequestDto requestDto);
+    CreateTaskRequest fromDto(CreateTaskRequestDto requestDto);
 
     TaskDto toDto(Task request);
 
