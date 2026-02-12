@@ -1,11 +1,8 @@
-server:
-  port: 8080
-
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
-    username: furb-x
-    password: 155795
+    username: USERNAME
+    password: PASSWORD
 
   jpa:
     hibernate:

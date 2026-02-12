@@ -513,7 +513,9 @@
   // ──────────────────────────────────────────────
   // CONFIG & STATE
   // ──────────────────────────────────────────────
-  const API_BASE = "/api/v1/tasks";
+  const API_BASE = (window.location.port === '63342')
+    ? "http://localhost:8080/api/v1/tasks"
+    : "/api/v1/tasks";
   let allTasks = [];
   let currentFilter = "all";
 
