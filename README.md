@@ -22,3 +22,70 @@ This project demonstrates backend development best practices including DTO usage
 ⚠️ Global exception handling
 
 🧱 Layered architecture (Controller → Service → Repository)
+
+🏗️ Tech Stack
+
+Java 17+
+
+Spring Boot
+
+Spring Data JPA
+
+Hibernate
+
+PostgreSQL
+
+Maven
+
+Lombok (if used)
+
+📂 Project Structure
+src/
+ ├── controller/       # REST Controllers
+ ├── service/          # Business logic
+ ├── repository/       # Data access layer
+ ├── entity/           # JPA entities
+ ├── dto/              # Data Transfer Objects
+ ├── exception/        # Custom & global exception handling
+ └── TaskManagerApplication.java
+🗄️ Database Configuration
+
+Set environment variables:
+
+export DB_URL=jdbc:postgresql://localhost:5432/taskdb
+export DB_USER=postgres
+export DB_PASSWORD=password
+
+No hardcoded credentials are used.
+
+▶️ Build & Run
+Prerequisites
+
+Java 17+
+
+Maven
+
+PostgreSQL
+
+Build
+mvn clean package
+Run
+java -jar target/taskmanager-1.0-SNAPSHOT.jar
+📬 Sample API Endpoints
+Method	Endpoint	Description
+POST	/api/tasks	Create task
+GET	/api/tasks	Get all tasks
+GET	/api/tasks/{id}	Get task by ID
+PUT	/api/tasks/{id}	Update task
+DELETE	/api/tasks/{id}	Delete task
+🎯 Purpose
+
+This project is designed for:
+
+Backend practice
+
+Interview preparation
+
+Portfolio demonstration
+
+Understanding REST API development
