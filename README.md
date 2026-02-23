@@ -36,22 +36,16 @@ src/
 🗄️ Database Configuration
 
 Set environment variables:
-
 export DB_URL=jdbc:postgresql://localhost:5432/taskdb
 export DB_USER=postgres
 export DB_PASSWORD=password
 
 No hardcoded credentials are used.
-
 ▶️ Build & Run
 Prerequisites
-
 Java 17+
-
 Maven
-
 PostgreSQL
-
 Build
 mvn clean package
 Run
@@ -68,9 +62,6 @@ DELETE	/api/tasks/{id}	Delete task
 This project is designed for:
 
 Backend practice
-
 Interview preparation
-
 Portfolio demonstration
-
 Understanding REST API development
