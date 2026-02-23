@@ -14,7 +14,6 @@ This project demonstrates backend development best practices including DTO usage
 
 ⚠️ Global exception handling
 🧱 Layered architecture (Controller → Service → Repository)
-
 🏗️ Tech Stack
 Java 17+
 Spring Boot
